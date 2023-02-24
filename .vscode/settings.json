@@ -1,0 +1,7 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/CMakeProject1",
+    "dataworkspace.excludedProjects": [
+        "botDB/botDB.sqlproj",
+        "localhost/localhost.sqlproj"
+    ]
+}
