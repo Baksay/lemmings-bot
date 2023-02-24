@@ -228,6 +228,8 @@ class Program
             else{
                 await chan.SendMessageAsync("Что-то пошло не так!");
             }
+
+            
         }
     }
 
