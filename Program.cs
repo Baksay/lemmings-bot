@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+
 using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
@@ -11,17 +11,29 @@ using Discord.WebSocket;
 
 public class MyEvent
 {
-    public string user_cr, act_group, act_date, act_time;
+    public string user_cr, act_group, act_date, act_time, message;
     public int act_type, action_id;
+    public bool isActive;
 
-    public MyEvent(int action_id_ins, string user_cr_ins, string act_group_ins, string act_date_ins, string act_time_ins, int act_type_ins)
+    public MyEvent(
+        int action_id_ins,
+        string user_cr_ins,
+        string act_group_ins,
+        string act_date_ins, 
+        string act_time_ins, 
+        int act_type_ins, 
+        string message_ins, 
+        bool isActive_ins
+        )
     {
         action_id = action_id_ins;
         user_cr = user_cr_ins;
         act_group = act_group_ins;
         act_date = act_date_ins;
         act_time = act_time_ins;
+        message = message_ins;
         act_type = act_type_ins;
+        isActive = isActive_ins;
     }
 }
 
@@ -100,19 +112,21 @@ class Program
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
 
-            command.CommandText = "SELECT action_id, user_cr, act_group, act_date, act_time, act_type FROM Main WHERE action_id = @target_id;";
+            command.CommandText = "SELECT * FROM Main WHERE action_id = @target_id;";
             command.Parameters.AddWithValue("@target_id", target_id);
             SqlDataReader a = command.ExecuteReader();
             a.Read();
 
-            int action_id = a.GetInt32(a.GetOrdinal("action_id"));
-            string user_cr = a.GetString(a.GetOrdinal("user_cr"));
-            string act_group = a.GetString(a.GetOrdinal("act_group"));
-            string act_date = a.GetDateTime(a.GetOrdinal("act_date")).ToString();
-            string act_time = a.GetTimeSpan(a.GetOrdinal("act_time")).ToString();
-            int act_type = a.GetInt32(a.GetOrdinal("act_type"));
-
-            MyEvent result = new MyEvent(action_id, user_cr, act_group, act_date, act_time, act_type);
+            MyEvent result = new MyEvent(
+                a.GetInt32(a.GetOrdinal("action_id")),
+                a.GetString(a.GetOrdinal("user_cr")),
+                a.GetString(a.GetOrdinal("act_group")),
+                a.GetDateTime(a.GetOrdinal("act_date")).ToString(),
+                a.GetTimeSpan(a.GetOrdinal("act_time")).ToString(),
+                a.GetInt32(a.GetOrdinal("act_type")),
+                a.GetString(a.GetOrdinal("message")),
+                a.GetBoolean(a.GetOrdinal("isActive"))
+                );
             return result;
 
         }
@@ -129,7 +143,7 @@ class Program
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
 
-            command.CommandText = "SELECT action_id, user_cr, act_group, act_date, act_time, act_type FROM Main;";
+            command.CommandText = "SELECT * FROM Main;";
             SqlDataReader a = command.ExecuteReader();
 
             while (a.Read() == true)
@@ -140,8 +154,10 @@ class Program
                 string act_date = a.GetDateTime(a.GetOrdinal("act_date")).ToString();
                 string act_time = a.GetTimeSpan(a.GetOrdinal("act_time")).ToString();
                 int act_type = a.GetInt32(a.GetOrdinal("act_type"));
+                string message = a.GetString(a.GetOrdinal("message"));
+                bool isActive = a.GetBoolean(a.GetOrdinal("isActive"));
 
-                MyEvent e = new MyEvent(action_id, user_cr, act_group, act_date, act_time, act_type);
+                MyEvent e = new MyEvent(action_id, user_cr, act_group, act_date, act_time, act_type, message, isActive);
                 result.Add(e);
             }
 
@@ -183,56 +199,128 @@ class Program
         var chan = message.Channel;
         TargetMessage += " endofstring";
 
-        if (TargetMessage.Substring(0, 5) == "!help")
+        if (message.Author.Id != 859119334768771122)
         {
-            await chan.SendMessageAsync("Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*");
-            await chan.SendMessageAsync("*Требуется сохранить все пробелы, а курсивный текст заменить на свой*");
-            await chan.SendMessageAsync("Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать)");
-            await chan.SendMessageAsync("Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***");
-        }
-        else if (TargetMessage.Substring(0, 4) == "!add")
-        {
-            int ToFind = TargetMessage.IndexOf("@");
-            int EndOf = TargetMessage.IndexOf(" ", ToFind);
-            string UsersGroup = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит группу пользователей по собачке
-            TargetMessage = TargetMessage.Remove(0, EndOf++); //Убирает все связанное с группой
-
-            ToFind = TargetMessage.IndexOf("first day: ");
-            ToFind = ToFind + 11;
-            EndOf = TargetMessage.IndexOf(" ", ToFind);
-            string TargetDate = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит целевой день пользователей
-            TargetMessage = TargetMessage.Remove(0, EndOf++);
-
-            ToFind = TargetMessage.IndexOf("time: ");
-            ToFind = ToFind + 6;
-            EndOf = TargetMessage.IndexOf(" ", ToFind);
-            string TargetTime = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит целевое время пользователей
-            TargetMessage = TargetMessage.Remove(0, EndOf++);
-
-            ToFind = TargetMessage.IndexOf("type: ");
-            ToFind = ToFind + 6;
-            EndOf = TargetMessage.IndexOf(" ", ToFind);
-            string ActType = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит тип упоминания пользователей
-            TargetMessage = TargetMessage.Remove(0, EndOf++);
-
-            ToFind = TargetMessage.IndexOf("message: ");
-            ToFind = ToFind + 9;
-            EndOf = TargetMessage.IndexOf(" endofstring", ToFind);
-            string UserMessage = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит сообщение для пользователей
-            TargetMessage = TargetMessage.Remove(0, EndOf++);
-
-            if(UsersGroup != null && TargetDate != null && TargetTime != null && ActType != null && UserMessage != null){
-                await chan.SendMessageAsync("Успешно!");
-                add_event("Server=localhost;Database=db1;Trusted_Connection=True;", message.Author.ToString(), UsersGroup, TargetDate, TargetTime, int.Parse(ActType), UserMessage);
+            if (TargetMessage.Substring(0, 5) == "!help")
+            {
+                await HelpMessage(message);
             }
-            else{
-                await chan.SendMessageAsync("Что-то пошло не так!");
+            else if (TargetMessage.Substring(0, 4) == "!add")
+            {
+                await SubstringingMessage(message);
             }
-
-            
+            else if (TargetMessage.Substring(0, 6) == "!show ")
+            {
+                await EventReturner(TargetMessage, chan);
+            }
         }
     }
 
+    public static async Task HelpMessage(SocketMessage message)
+    {
+        var chan = message.Channel;
+        await chan.SendMessageAsync("Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*");
+        await chan.SendMessageAsync("*Требуется сохранить все пробелы, а курсивный текст заменить на свой*");
+        await chan.SendMessageAsync("Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать)");
+        await chan.SendMessageAsync("Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***");
+    }
+
+    public static async Task SubstringingMessage(SocketMessage message)
+    {
+        string TargetMessage = message.ToString();
+        var chan = message.Channel;
+        TargetMessage += " endofstring";
+        int ToFind = TargetMessage.IndexOf("@");
+        int EndOf = TargetMessage.IndexOf(" ", ToFind);
+        string UsersGroup = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит группу пользователей по собачке
+        TargetMessage = TargetMessage.Remove(0, EndOf++); //Убирает все связанное с группой
+
+        ToFind = TargetMessage.IndexOf("first day: ");
+        ToFind = ToFind + 11;
+        EndOf = TargetMessage.IndexOf(" ", ToFind);
+        string TargetDate = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит целевой день пользователей
+        TargetMessage = TargetMessage.Remove(0, EndOf++);
+
+        ToFind = TargetMessage.IndexOf("time: ");
+        ToFind = ToFind + 6;
+        EndOf = TargetMessage.IndexOf(" ", ToFind);
+        string TargetTime = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит целевое время пользователей
+        TargetMessage = TargetMessage.Remove(0, EndOf++);
+
+        ToFind = TargetMessage.IndexOf("type: ");
+        ToFind = ToFind + 6;
+        EndOf = TargetMessage.IndexOf(" ", ToFind);
+        string ActType = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит тип упоминания пользователей
+        TargetMessage = TargetMessage.Remove(0, EndOf++);
+
+        ToFind = TargetMessage.IndexOf("message: ");
+        ToFind = ToFind + 9;
+        EndOf = TargetMessage.IndexOf(" endofstring", ToFind);
+        string UserMessage = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит сообщение для пользователей
+        TargetMessage = TargetMessage.Remove(0, EndOf++);
+
+        if (UsersGroup != null && TargetDate != null && TargetTime != null && ActType != null && UserMessage != null)
+        {
+            await chan.SendMessageAsync("Успешно!");
+            add_event("Server=localhost;Database=db1;Trusted_Connection=True;", message.Author.ToString(), UsersGroup, TargetDate, TargetTime, int.Parse(ActType), UserMessage);
+        }
+        else
+        {
+            await chan.SendMessageAsync("Что-то пошло не так!");
+        }
+    }
+
+    public static async Task EventReturner(string TargetMessage, ISocketMessageChannel chan)
+    {
+        
+        int EndOf = TargetMessage.IndexOf(" ", 6);
+        string task = TargetMessage.Substring(6, EndOf - 6);
+        if (task == "all")
+        {
+            List<MyEvent> Events = get_alldata("Server=localhost;Database=db1;Trusted_Connection=True;");
+            for (int i = 0; i < Events.Count(); i++){
+                string result = "```";
+                result += "Id: ";
+                result += Events[i].action_id.ToString();
+                result += "\n";
+
+                result += "Creator: ";
+                result += Events[i].user_cr.ToString();
+                result += "\n";
+
+                string group = Events[i].act_group.ToString();
+                result += "Group: ";
+                result += Events[i].act_group.ToString();
+                result += "\n";
+
+                result += "Message: ";
+                result += Events[i].message.ToString();
+                result += "\n";
+
+                result += "Target time: ";
+                result += Events[i].act_date.ToString().Remove(11);
+                result += Events[i].act_time.ToString();
+                result += "\n";
+
+                result += "Is active: ";
+                if (Events[i].isActive == true){
+                    result += "active";
+                }
+                else{
+                    result += "false";
+                }
+                result += "\n";
+
+                result += "```";
+
+                await chan.SendMessageAsync(result);
+            }
+            await chan.SendMessageAsync();
+        }
+
+
+        
+    }
 
     static void Main(string[] args)
     {
