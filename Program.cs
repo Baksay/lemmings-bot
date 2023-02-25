@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System;
+using System.Timers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
@@ -19,10 +20,10 @@ public class MyEvent
         int action_id_ins,
         string user_cr_ins,
         string act_group_ins,
-        string act_date_ins, 
-        string act_time_ins, 
-        int act_type_ins, 
-        string message_ins, 
+        string act_date_ins,
+        string act_time_ins,
+        int act_type_ins,
+        string message_ins,
         bool isActive_ins
         )
     {
@@ -37,6 +38,10 @@ public class MyEvent
     }
 }
 
+public struct MessageInstance
+{
+    public static SocketMessage mes { get; set; }
+}
 class Program
 {
 
@@ -87,6 +92,7 @@ class Program
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
 
+
             String query = "INSERT INTO Main (user_cr, act_group, act_date, act_time, act_type, message, isActive) VALUES (@user_cr, @act_group, @act_date, @act_time, @act_type, @message, 1);";
 
             command.CommandText = query;
@@ -129,6 +135,44 @@ class Program
                 );
             return result;
 
+        }
+    }
+
+    static List<MyEvent> GetTodayActiveData(string connectionString)
+    {
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+
+            List<MyEvent> result = new List<MyEvent>();
+
+            connection.Open();
+            SqlCommand command = new SqlCommand();
+            command.Connection = connection;
+            DateTime today = DateTime.Today;
+
+            command.CommandText = "SELECT * FROM Main WHERE isActive = 1 AND act_date = @date;";
+            command.Parameters.AddWithValue("@date", today);
+            SqlDataReader a = command.ExecuteReader();
+
+            while (a.Read() == true)
+            {
+                int action_id = a.GetInt32(a.GetOrdinal("action_id"));
+                string user_cr = a.GetString(a.GetOrdinal("user_cr"));
+                string act_group = a.GetString(a.GetOrdinal("act_group"));
+                string act_date = a.GetDateTime(a.GetOrdinal("act_date")).ToString();
+                string act_time = a.GetTimeSpan(a.GetOrdinal("act_time")).ToString();
+                int act_type = a.GetInt32(a.GetOrdinal("act_type"));
+                string message = a.GetString(a.GetOrdinal("message"));
+                bool isActive = a.GetBoolean(a.GetOrdinal("isActive"));
+
+                act_time = act_time.Remove(5, 3);     //уборка из вывода секунд, но по умолчанию время в час ночи он пишет как 1, а не 01
+                //else if (act_time.Length == 7) { act_time = act_time.Remove(4, 3); }
+
+                MyEvent e = new MyEvent(action_id, user_cr, act_group, act_date, act_time, act_type, message, isActive);
+                result.Add(e);
+            }
+
+            return result;
         }
     }
 
@@ -182,6 +226,9 @@ class Program
 
         discord.MessageUpdated += MessageUpdated;
         discord.MessageReceived += MessageReceived;
+
+        EventStarter(60000);
+
         await Task.Delay(-1);
     }
     public static async Task MessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
@@ -199,6 +246,8 @@ class Program
         var chan = message.Channel;
         TargetMessage += " endofstring";
 
+
+
         if (message.Author.Id != 859119334768771122)
         {
             if (TargetMessage.Substring(0, 5) == "!help")
@@ -213,16 +262,22 @@ class Program
             {
                 await EventReturner(TargetMessage, chan);
             }
+            else if (TargetMessage.Substring(0, 17) == "!set info channel")
+            {//задает как канал для уведомлений канал в котором написанно это сообщение
+                await chan.SendMessageAsync("Успешно!");
+                MessageInstance.mes = message;
+            }
         }
     }
 
     public static async Task HelpMessage(SocketMessage message)
     {
         var chan = message.Channel;
-        await chan.SendMessageAsync("Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*");
-        await chan.SendMessageAsync("*Требуется сохранить все пробелы, а курсивный текст заменить на свой*");
-        await chan.SendMessageAsync("Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать)");
-        await chan.SendMessageAsync("Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***");
+        await chan.SendMessageAsync("```Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*```");
+        await chan.SendMessageAsync("```*Требуется сохранить все пробелы, а курсивный текст заменить на свой*```");
+        await chan.SendMessageAsync("```Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать)```");
+        await chan.SendMessageAsync("```Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***```");
+        await chan.SendMessageAsync("```Команда !set info channel задаст активный канал как канал для уведомлений```");
     }
 
     public static async Task SubstringingMessage(SocketMessage message)
@@ -272,13 +327,13 @@ class Program
 
     public static async Task EventReturner(string TargetMessage, ISocketMessageChannel chan)
     {
-        
         int EndOf = TargetMessage.IndexOf(" ", 6);
         string task = TargetMessage.Substring(6, EndOf - 6);
         if (task == "all")
         {
             List<MyEvent> Events = get_alldata("Server=localhost;Database=db1;Trusted_Connection=True;");
-            for (int i = 0; i < Events.Count(); i++){
+            for (int i = 0; i < Events.Count(); i++)
+            {
                 string result = "```";
                 result += "Id: ";
                 result += Events[i].action_id.ToString();
@@ -303,10 +358,12 @@ class Program
                 result += "\n";
 
                 result += "Is active: ";
-                if (Events[i].isActive == true){
+                if (Events[i].isActive == true)
+                {
                     result += "active";
                 }
-                else{
+                else
+                {
                     result += "false";
                 }
                 result += "\n";
@@ -317,16 +374,58 @@ class Program
             }
             await chan.SendMessageAsync();
         }
+    }
+
+    public static void EventStarter(int timer)
+    {
+        System.Timers.Timer aTimer = new System.Timers.Timer(timer);
+        aTimer.AutoReset = true;
+        aTimer.Elapsed += OnTimedEvent;
+        aTimer.Enabled = true;
+        ElapsedEventArgs e;
+    }
+
+    public static async void OnTimedEvent(Object source, ElapsedEventArgs e)
+    {
+        List<MyEvent> Events = GetTodayActiveData("Server=localhost;Database=db1;Trusted_Connection=True;");
+        DateTime ControlTime = DateTime.Now;
+        string nowsTime = "0";
+        string nowsTime1 = ControlTime.ToString().Remove(0, 11);//11 - date
+        if (nowsTime1.Length == 8)
+        {
+            nowsTime = nowsTime1;
+            nowsTime = nowsTime.Remove(5, 3);
+        }      //уборка из вывода секунд, но по умолчанию время в час ночи он пишет как 1, а не 01
+        else if (nowsTime1.Length == 7)
+        {
+            nowsTime += nowsTime1;
+            nowsTime = nowsTime.Remove(5, 3);
+        }
+        for (int i = 0; i < Events.Count(); i++)
+        {
+            if (Events[i].act_time == nowsTime)
+            {
+                MessageSender(Events[i].action_id);
+            }
+        }
+    }
 
 
-        
+
+    public static async Task MessageSender(int ID)
+    {
+        //id канала по умолчанию: 859120596147240993
+        ISocketMessageChannel chan = MessageInstance.mes.Channel;
+        MyEvent targetEvent = get_eventdata("Server=localhost;Database=db1;Trusted_Connection=True;", ID);
+        chan.SendMessageAsync(targetEvent.act_group);
+        chan.SendMessageAsync(targetEvent.message);
     }
 
     static void Main(string[] args)
     {
 
         create_db();
-        
+
         //add_event("Server=localhost;Database=db1;Trusted_Connection=True;", "abobaNew", "3", "2010-10-10", "10:10:10", 10);
 
 
