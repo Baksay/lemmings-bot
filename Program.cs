@@ -326,6 +326,7 @@ class Program
     {
 
         create_db();
+        
         //add_event("Server=localhost;Database=db1;Trusted_Connection=True;", "abobaNew", "3", "2010-10-10", "10:10:10", 10);
 
 
