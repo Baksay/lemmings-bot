@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System;
 using System.Timers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
-using System;
-using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 
@@ -38,13 +35,9 @@ public class MyEvent
     }
 }
 
-public struct MessageInstance
-{
-    public static SocketMessage mes { get; set; }
-}
+public struct MessageInstance { public static SocketMessage mes { get; set; } }
 class Program
 {
-
     static void create_db()
     {
         string connectionString = "Server=localhost;Database=master;Trusted_Connection=True;";//Блок создания таблиц и БД. Прогоняется при первом запуске, а после игнорируется
@@ -150,7 +143,7 @@ class Program
             command.Connection = connection;
             DateTime today = DateTime.Today;
 
-            command.CommandText = "SELECT * FROM Main WHERE isActive = 1 AND act_date = @date;";
+            command.CommandText = "SELECT * FROM Main WHERE isActive = 1 AND act_date = @date OR (act_type = 1 AND act_date < @date);";
             command.Parameters.AddWithValue("@date", today);
             SqlDataReader a = command.ExecuteReader();
 
@@ -204,9 +197,7 @@ class Program
                 MyEvent e = new MyEvent(action_id, user_cr, act_group, act_date, act_time, act_type, message, isActive);
                 result.Add(e);
             }
-
             return result;
-
         }
     }
 
@@ -264,8 +255,14 @@ class Program
             }
             else if (TargetMessage.Substring(0, 17) == "!set info channel")
             {//задает как канал для уведомлений канал в котором написанно это сообщение
-                await chan.SendMessageAsync("Успешно!");
-                MessageInstance.mes = message;
+                if (message.Author.Id == 292707993596985366)
+                {
+                    MessageInstance.mes = message;
+                    await chan.SendMessageAsync("Успешно!");
+                }
+                else{
+                    await chan.SendMessageAsync("Недостаточно прав");
+                }
             }
         }
     }
@@ -275,7 +272,7 @@ class Program
         var chan = message.Channel;
         await chan.SendMessageAsync("```Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*```");
         await chan.SendMessageAsync("```*Требуется сохранить все пробелы, а курсивный текст заменить на свой*```");
-        await chan.SendMessageAsync("```Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать)```");
+        await chan.SendMessageAsync("```Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать), Тип уведомлений 1 - уведомления будут каждый день ПОСЛЕ указанной даты в нужное время, люой другой тип - единоразово.```");
         await chan.SendMessageAsync("```Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***```");
         await chan.SendMessageAsync("```Команда !set info channel задаст активный канал как канал для уведомлений```");
     }
@@ -417,8 +414,8 @@ class Program
         //id канала по умолчанию: 859120596147240993
         ISocketMessageChannel chan = MessageInstance.mes.Channel;
         MyEvent targetEvent = get_eventdata("Server=localhost;Database=db1;Trusted_Connection=True;", ID);
-        chan.SendMessageAsync(targetEvent.act_group);
-        chan.SendMessageAsync(targetEvent.message);
+        await chan.SendMessageAsync(targetEvent.act_group);
+        await chan.SendMessageAsync(targetEvent.message);
     }
 
     static void Main(string[] args)
@@ -431,12 +428,10 @@ class Program
 
         //MyEvent result = get_eventdata("Server=localhost;Database=db1;Trusted_Connection=True;", 6);
 
-        List<MyEvent> result1 = get_alldata("Server=localhost;Database=db1;Trusted_Connection=True;");
-
+        //List<MyEvent> result1 = get_alldata("Server=localhost;Database=db1;Trusted_Connection=True;");
 
         Task.WaitAny(doWork());
 
     }
     //ODU5MTE5MzM0NzY4NzcxMTIy.GuSbAn.522ODH3wL2b9kiIX7PjJrlKKf3faIDlGl3iW5c
 }
-
