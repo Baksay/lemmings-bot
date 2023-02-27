@@ -253,6 +253,9 @@ class Program
             {
                 await EventReturner(TargetMessage, chan);
             }
+            else if(TargetMessage.Substring(0, 11) == "!event help"){
+                await chan.SendMessageAsync("!add **Обратный слэш + @роль** first day: **день начала** time: **нужное время** type: **тип уведомлений(1 для каждодневных, 2 для единоразовых)** message: **текст уведомления**");
+            }
             else if (TargetMessage.Substring(0, 17) == "!set info channel")
             {//задает как канал для уведомлений канал в котором написанно это сообщение
                 if (message.Author.Id == 292707993596985366)
@@ -270,10 +273,10 @@ class Program
     public static async Task HelpMessage(SocketMessage message)
     {
         var chan = message.Channel;
-        await chan.SendMessageAsync("```Сообщение для записи должно быть в формате !add @*группа пользователей* first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*```");
+        await chan.SendMessageAsync("```Сообщение для записи должно быть в формате !add *группа пользователей*(Без собачки) first day: *первый день упоминаний* time: *время упоминаний* type: *тип упоминаний* message: *сообщение при упоминании*```");
         await chan.SendMessageAsync("```*Требуется сохранить все пробелы, а курсивный текст заменить на свой*```");
         await chan.SendMessageAsync("```Формат даты: dd-mm-yyyy, Формат времени: hh:mm:ssss (Секунды можно не указывать), Тип уведомлений 1 - уведомления будут каждый день ПОСЛЕ указанной даты в нужное время, люой другой тип - единоразово.```");
-        await chan.SendMessageAsync("```Пример: !add ***@Лемминги*** first day: ***10-10-2023*** time: ***10:10*** type: ***1*** message: ***Vsem ku!***```");
+        await chan.SendMessageAsync("```Пример: !add *Лемминги* first day: *10-10-2023* time: *10:10* type: *1* message: *Vsem ku!*```");
         await chan.SendMessageAsync("```Команда !set info channel задаст активный канал как канал для уведомлений```");
     }
 
@@ -282,9 +285,13 @@ class Program
         string TargetMessage = message.ToString();
         var chan = message.Channel;
         TargetMessage += " endofstring";
-        int ToFind = TargetMessage.IndexOf("@");
-        int EndOf = TargetMessage.IndexOf(" ", ToFind);
-        string UsersGroup = TargetMessage.Substring(ToFind, EndOf - ToFind); //Находит группу пользователей по собачке
+        int ToFind = TargetMessage.IndexOf("!add ");
+        ToFind = ToFind+5;
+        int EndOf = TargetMessage.IndexOf("first day:", ToFind);
+        
+        string UsersGroup = TargetMessage.Substring(ToFind, EndOf-1-ToFind); //Находит группу пользователей
+        
+
         TargetMessage = TargetMessage.Remove(0, EndOf++); //Убирает все связанное с группой
 
         ToFind = TargetMessage.IndexOf("first day: ");
@@ -398,12 +405,18 @@ class Program
             nowsTime += nowsTime1;
             nowsTime = nowsTime.Remove(5, 3);
         }
+        Console.WriteLine("Старт проверки " + Events.Count() + " ивентов");
         for (int i = 0; i < Events.Count(); i++)
         {
             if (Events[i].act_time == nowsTime)
             {
+                Console.WriteLine("Успешная проверка");
                 MessageSender(Events[i].action_id);
             }
+            else{
+                Console.WriteLine("Неуспешная проверка");
+            }
+            
         }
     }
 
