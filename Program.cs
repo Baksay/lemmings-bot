@@ -254,7 +254,7 @@ class Program
                 await EventReturner(TargetMessage, chan);
             }
             else if(TargetMessage.Substring(0, 11) == "!event help"){
-                await chan.SendMessageAsync("!add **Обратный слэш + @роль** first day: **день начала** time: **нужное время** type: **тип уведомлений(1 для каждодневных, 2 для единоразовых)** message: **текст уведомления**");
+                await chan.SendMessageAsync("!add **@роль** first day: **день начала** time: **нужное время** type: **тип уведомлений(1 для каждодневных, 2 для единоразовых)** message: **текст уведомления**");
             }
             else if (TargetMessage.Substring(0, 17) == "!set info channel")
             {//задает как канал для уведомлений канал в котором написанно это сообщение
@@ -262,6 +262,7 @@ class Program
                 {
                     MessageInstance.mes = message;
                     await chan.SendMessageAsync("Успешно!");
+                    Console.WriteLine("Канал выдачи добавлен");
                 }
                 else{
                     await chan.SendMessageAsync("Недостаточно прав");
@@ -322,10 +323,12 @@ class Program
         {
             await chan.SendMessageAsync("Успешно!");
             add_event("Server=localhost;Database=db1;Trusted_Connection=True;", message.Author.ToString(), UsersGroup, TargetDate, TargetTime, int.Parse(ActType), UserMessage);
+            Console.WriteLine("Ивент добавлен");
         }
         else
         {
             await chan.SendMessageAsync("Что-то пошло не так!");
+            Console.WriteLine("Ошибка добавления ивента");
         }
     }
 
@@ -405,7 +408,7 @@ class Program
             nowsTime += nowsTime1;
             nowsTime = nowsTime.Remove(5, 3);
         }
-        Console.WriteLine("Старт проверки " + Events.Count() + " ивентов");
+        Console.WriteLine("Старт проверки " + Events.Count() + " ивентов в " + nowsTime);
         for (int i = 0; i < Events.Count(); i++)
         {
             if (Events[i].act_time == nowsTime)
@@ -435,6 +438,7 @@ class Program
     {
 
         create_db();
+        Console.WriteLine("Бд создана");
 
         //add_event("Server=localhost;Database=db1;Trusted_Connection=True;", "abobaNew", "3", "2010-10-10", "10:10:10", 10);
 
