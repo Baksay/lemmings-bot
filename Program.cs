@@ -211,7 +211,7 @@ class Program
         };
         DiscordSocketClient discord = new DiscordSocketClient(config);
 
-        string token = "ODU5MTE5MzM0NzY4NzcxMTIy.GuSbAn.522ODH3wL2b9kiIX7PjJrlKKf3faIDlGl3iW5c";
+        string token = "ВЕРНУТЬ СЮДА ТОКЕН"; //Внедрить считывание токена из файла на серверной машине
         await discord.LoginAsync(TokenType.Bot, token);
         await discord.StartAsync();
 
@@ -439,15 +439,7 @@ class Program
         create_db();
         Console.WriteLine("Бд создана");
 
-        //add_event("Server=localhost;Database=db1;Trusted_Connection=True;", "abobaNew", "3", "2010-10-10", "10:10:10", 10);
-
-
-        //MyEvent result = get_eventdata("Server=localhost;Database=db1;Trusted_Connection=True;", 6);
-
-        //List<MyEvent> result1 = get_alldata("Server=localhost;Database=db1;Trusted_Connection=True;");
-
         Task.WaitAny(doWork());
 
     }
-    //ODU5MTE5MzM0NzY4NzcxMTIy.GuSbAn.522ODH3wL2b9kiIX7PjJrlKKf3faIDlGl3iW5c
 }
