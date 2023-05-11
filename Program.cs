@@ -51,11 +51,11 @@ class Program
             {
                 command.CommandText = "CREATE DATABASE db1";
                 command.ExecuteNonQuery();
-                Console.WriteLine("База данных создана");
+                Console.WriteLine("DB Main created");
             }
             catch
             {
-                Console.WriteLine("БД уже была создана");
+                Console.WriteLine("DB Main already exists");
             }
         }
         connectionString = "Server=localhost;Database=db1;Trusted_Connection=True;";
@@ -68,11 +68,11 @@ class Program
             {
                 command.CommandText = "CREATE TABLE Main (action_id INT PRIMARY KEY IDENTITY, user_cr NVARCHAR(20) NOT NULL, act_group NVARCHAR(100) NOT NULL, act_date DATE NOT NULL, act_time TIME NOT NULL, act_type INT NOT NULL, message NVARCHAR(100) NOT NULL, isActive BIT NOT NULL)";
                 command.ExecuteNonQuery();
-                Console.WriteLine("Таблица БД создана");
+                Console.WriteLine("DB Table created");
             }
             catch
             {
-                Console.WriteLine("Таблица БД уже была создана");
+                Console.WriteLine("DB Table already exists");
             }
         }
     }
@@ -201,6 +201,24 @@ class Program
         }
     }
 
+    static string ReadToken()
+    {
+        string result = "";
+        string path = "loginData\\token.txt";
+
+        result = File.ReadAllText(path);
+
+        if (result != null)
+        {
+            Console.WriteLine("Token read successfully");
+            return result;
+        }
+        else
+        {
+            Console.WriteLine("Token reading error!");
+            return result = "";
+        }
+    }
 
     static async Task doWork()
     {
@@ -211,7 +229,7 @@ class Program
         };
         DiscordSocketClient discord = new DiscordSocketClient(config);
 
-        string token = "ВЕРНУТЬ СЮДА ТОКЕН"; //Внедрить считывание токена из файла на серверной машине
+        string token = ReadToken(); //Внедрить считывание токена из файла на серверной машине
         await discord.LoginAsync(TokenType.Bot, token);
         await discord.StartAsync();
 
@@ -224,9 +242,9 @@ class Program
     }
     public static async Task MessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
     {
-
-        var message = after;
-        Console.WriteLine(message);
+        //Обработчик измененных сообщений
+        //var message = after;
+        //Console.WriteLine(message);
 
     }
 
@@ -253,7 +271,8 @@ class Program
             {
                 await EventReturner(TargetMessage, chan);
             }
-            else if(TargetMessage.Substring(0, 11) == "!event help"){
+            else if (TargetMessage.Substring(0, 11) == "!event help")
+            {
                 await chan.SendMessageAsync("!add **@роль** first day: **день начала** time: **нужное время** type: **тип уведомлений(1 для каждодневных, 2 для единоразовых)** message: **текст уведомления**");
             }
             else if (TargetMessage.Substring(0, 17) == "!set info channel")
@@ -264,7 +283,8 @@ class Program
                     await chan.SendMessageAsync("Успешно!");
                     Console.WriteLine("Канал выдачи добавлен");
                 }
-                else{
+                else
+                {
                     await chan.SendMessageAsync("Недостаточно прав");
                 }
             }
@@ -286,11 +306,11 @@ class Program
         var chan = message.Channel;
         TargetMessage += " endofstring";
         int ToFind = TargetMessage.IndexOf("!add ");
-        ToFind = ToFind+5;
+        ToFind = ToFind + 5;
         int EndOf = TargetMessage.IndexOf("first day:", ToFind);
-        
-        string UsersGroup = TargetMessage.Substring(ToFind, EndOf-1-ToFind); //Находит группу пользователей
-        
+
+        string UsersGroup = TargetMessage.Substring(ToFind, EndOf - 1 - ToFind); //Находит группу пользователей
+
 
         TargetMessage = TargetMessage.Remove(0, EndOf++); //Убирает все связанное с группой
 
@@ -415,10 +435,11 @@ class Program
                 Console.WriteLine("Успешная проверка");
                 MessageSender(Events[i].action_id);
             }
-            else{
+            else
+            {
                 Console.WriteLine("Неуспешная проверка");
             }
-            
+
         }
     }
 
@@ -437,7 +458,7 @@ class Program
     {
 
         create_db();
-        Console.WriteLine("Бд создана");
+        Console.WriteLine("DB ready");
 
         Task.WaitAny(doWork());
 
